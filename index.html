@@ -1,193 +1,411 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Result Assistant</title>
-<style>
-  * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-  body { background: #0f172a; margin: 0; display: flex; justify-content: center; padding: 30px; }
-  .chat-container {
-    width: 100%; max-width: 480px; background: #1e293b; border-radius: 16px;
-    display: flex; flex-direction: column; height: 90vh; overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-  }
-  .chat-header {
-    background: #1E2761; color: white; padding: 16px 20px; font-weight: 700; font-size: 1.1rem;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  #stopBtn {
-    background: #dc2626; border: none; color: white; border-radius: 8px;
-    padding: 6px 12px; font-size: 0.8rem; cursor: pointer; font-weight: 600;
-  }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-  .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; line-height: 1.5; font-size: 0.92rem; }
-  .msg.user { align-self: flex-end; background: #b8205b; color: white; white-space: pre-wrap; }
-  .msg.bot { align-self: flex-start; background: #334155; color: #e2e8f0; }
-  .msg.bot p { margin: 0 0 8px 0; }
-  .msg.bot p:last-child { margin-bottom: 0; }
-  .msg.bot ul { margin: 4px 0 8px 0; padding-left: 20px; }
-  .msg.bot li { margin-bottom: 4px; }
-  .msg.bot strong { color: #93c5fd; }
-  .msg.bot h1, .msg.bot h2, .msg.bot h3 { margin: 8px 0 6px 0; font-size: 1rem; color: #93c5fd; }
-  .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #334155; }
-  .chat-input-row input {
-    flex: 1; padding: 12px; border-radius: 10px; border: none; background: #0f172a; color: white; font-size: 0.95rem;
-  }
-  .chat-input-row button {
-    border: none; border-radius: 10px; padding: 0 16px; font-weight: 700; cursor: pointer; color: white;
-  }
-  #sendBtn { background: #1E2761; }
-  #micBtn { background: #059669; font-size: 1.1rem; }
-  #micBtn.listening { background: #dc2626; animation: pulse 1s infinite; }
-  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Result Assistant</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, sans-serif;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #f4f5f7;
+      overscroll-behavior: none;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100dvh;
+      max-height: 850px;
+      background: #ffffff;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .chat-header {
+      background: #ffffff;
+      color: #111827;
+      padding: 16px 20px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      border-bottom: 1px solid #e5e7eb;
+      padding-top: calc(16px + env(safe-area-inset-top));
+    }
+
+    #stopBtn {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      color: #374151;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f9fafb;
+    }
+
+    .msg {
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.5;
+      font-size: 0.92rem;
+      word-wrap: break-word;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: #2563eb;
+      color: white;
+      white-space: pre-wrap;
+    }
+
+    .msg.bot {
+      align-self: flex-start;
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+    }
+
+    .msg.bot p {
+      margin: 0 0 8px 0;
+    }
+
+    .msg.bot p:last-child {
+      margin-bottom: 0;
+    }
+
+    .msg.bot ul {
+      margin: 4px 0 8px;
+      padding-left: 20px;
+    }
+
+    .msg.bot li {
+      margin-bottom: 4px;
+    }
+
+    .msg.bot strong {
+      color: #2563eb;
+    }
+
+    .msg.bot h1,
+    .msg.bot h2,
+    .msg.bot h3 {
+      margin: 8px 0 6px;
+      font-size: 1rem;
+      color: #2563eb;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid #e5e7eb;
+      background: #ffffff;
+      flex-shrink: 0;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      color: #111827;
+      font-size: 0.95rem;
+      min-width: 0;
+    }
+
+    .chat-input-row input::placeholder {
+      color: #9ca3af;
+    }
+
+    .chat-input-row button {
+      border: none;
+      border-radius: 10px;
+      padding: 0 16px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #sendBtn {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    #sendBtn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    #micBtn {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      color: #374151;
+      font-size: 1.1rem;
+    }
+
+    #micBtn.listening {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+
+      .chat-container {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+      }
+
+      .chat-header {
+        padding: 14px 16px;
+        padding-top: calc(14px + env(safe-area-inset-top));
+        font-size: 1rem;
+      }
+
+      .chat-messages {
+        padding: 12px;
+      }
+
+      .msg {
+        max-width: 92%;
+        font-size: 0.9rem;
+      }
+
+      .chat-input-row {
+        padding: 10px;
+        gap: 6px;
+      }
+
+      .chat-input-row input {
+        font-size: 16px;
+        padding: 12px;
+      }
+
+      #sendBtn,
+      #micBtn {
+        min-width: 52px;
+        height: 46px;
+        padding: 0 14px;
+      }
+
+      #stopBtn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="chat-container">
-  <div class="chat-header">
-    <span>🎓 Result Assistant</span>
-    <button id="stopBtn">🔇 Stop</button>
+  <div class="chat-container">
+    <div class="chat-header">
+      <span>Result Assistant</span>
+      <button id="stopBtn">Stop</button>
+    </div>
+    <div class="chat-messages" id="messages"></div>
+    <div class="chat-input-row">
+      <input id="textInput" type="text" placeholder="Type or speak your question..." />
+      <button id="micBtn">🎤</button>
+      <button id="sendBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 20L21 12L3 4V10L17 12L3 14V20Z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
   </div>
-  <div class="chat-messages" id="messages"></div>
-  <div class="chat-input-row">
-    <input id="textInput" type="text" placeholder="Type or speak your question..." />
-    <button id="micBtn">🎤</button>
-    <button id="sendBtn">Send</button>
-  </div>
-</div>
 
-<script>
-const API_URL = "https://result-ai.onrender.com/api/chat";
+  <script>
+    const API_URL = "https://result-ai.onrender.com/api/chat";
 
-let sessionId = localStorage.getItem("sessionId");
-if (!sessionId) {
-  sessionId = crypto.randomUUID();
-  localStorage.setItem("sessionId", sessionId);
-}
+    let sessionId = localStorage.getItem("sessionId");
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("sessionId", sessionId);
+    }
 
-const messagesEl = document.getElementById("messages");
-const textInput = document.getElementById("textInput");
-const sendBtn = document.getElementById("sendBtn");
-const micBtn = document.getElementById("micBtn");
-const stopBtn = document.getElementById("stopBtn");
+    const messagesEl = document.getElementById("messages");
+    const textInput = document.getElementById("textInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const micBtn = document.getElementById("micBtn");
+    const stopBtn = document.getElementById("stopBtn");
 
-// ---- Tiny markdown -> HTML converter (bold, bullets, headers, line breaks) ----
-function renderMarkdown(text) {
-  let html = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    function renderMarkdown(text) {
+      let html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 
-  html = html.replace(/^### (.*$)/gim, "<h3>$1</h3>");
-  html = html.replace(/^## (.*$)/gim, "<h2>$1</h2>");
-  html = html.replace(/^# (.*$)/gim, "<h1>$1</h1>");
-  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      html = html.replace(/^### (.*$)/gim, "<h3>$1</h3>");
+      html = html.replace(/^## (.*$)/gim, "<h2>$1</h2>");
+      html = html.replace(/^# (.*$)/gim, "<h1>$1</h1>");
+      html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 
-  // Convert consecutive "* item" or "- item" lines into a <ul>
-  html = html.replace(/(?:^|\n)((?:[*-] .*(?:\n|$))+)/g, (block) => {
-    const items = block
-      .trim()
-      .split("\n")
-      .map((line) => "<li>" + line.replace(/^[*-]\s+/, "") + "</li>")
-      .join("");
-    return "<ul>" + items + "</ul>";
-  });
+      html = html.replace(/(?:^|\n)((?:[*-] .*(?:\n|$))+)/g, (block) => {
+        const items = block
+          .trim()
+          .split("\n")
+          .map((line) => "<li>" + line.replace(/^[*-]\s+/, "") + "</li>")
+          .join("");
+        return "<ul>" + items + "</ul>";
+      });
 
-  // Remaining newlines become paragraph breaks
-  html = html
-    .split(/\n{2,}/)
-    .map((para) => (para.startsWith("<ul>") || para.startsWith("<h") ? para : "<p>" + para.replace(/\n/g, "<br>") + "</p>"))
-    .join("");
+      html = html
+        .split(/\n{2,}/)
+        .map((para) => (para.startsWith("<ul>") || para.startsWith("<h") ? para : "<p>" + para.replace(/\n/g, "<br>") + "</p>"))
+        .join("");
 
-  return html;
-}
+      return html;
+    }
 
-function addMessage(text, sender) {
-  const div = document.createElement("div");
-  div.className = "msg " + sender;
-  if (sender === "bot") {
-    div.innerHTML = renderMarkdown(text);
-  } else {
-    div.textContent = text;
-  }
-  messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
+    function addMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = "msg " + sender;
+      if (sender === "bot") {
+        div.innerHTML = renderMarkdown(text);
+      } else {
+        div.textContent = text;
+      }
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
 
-async function sendMessage(message) {
-  if (!message.trim()) return;
-  addMessage(message, "user");
-  textInput.value = "";
+    async function sendMessage(message) {
+      if (!message.trim()) return;
+      addMessage(message, "user");
+      textInput.value = "";
 
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, message }),
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, message }),
+        });
+        const data = await res.json();
+        const reply = data.reply || data.error || "Something went wrong.";
+        addMessage(reply, "bot");
+        speak(reply);
+      } catch (err) {
+        addMessage("Error reaching server: " + err.message, "bot");
+      }
+    }
+
+    function speak(text) {
+      speechSynthesis.cancel();
+      const plainText = text.replace(/[*#_`]/g, "");
+      const utterance = new SpeechSynthesisUtterance(plainText);
+      utterance.rate = 1;
+      speechSynthesis.speak(utterance);
+    }
+
+    stopBtn.addEventListener("click", () => speechSynthesis.cancel());
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    let listening = false;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-IN";
+      recognition.interimResults = false;
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        sendMessage(transcript);
+      };
+
+      recognition.onend = () => {
+        listening = false;
+        micBtn.classList.remove("listening");
+      };
+    } else {
+      micBtn.disabled = true;
+      micBtn.title = "Speech recognition not supported in this browser (use Chrome)";
+    }
+
+    micBtn.addEventListener("click", () => {
+      if (!recognition) return;
+      if (listening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+        listening = true;
+        micBtn.classList.add("listening");
+      }
     });
-    const data = await res.json();
-    const reply = data.reply || data.error || "Something went wrong.";
-    addMessage(reply, "bot");
-    speak(reply);
-  } catch (err) {
-    addMessage("Error reaching server: " + err.message, "bot");
-  }
-}
 
-// ---- Text-to-speech: cancel any ongoing speech before starting new ----
-function speak(text) {
-  speechSynthesis.cancel(); // stop whatever is currently being read
-  const plainText = text.replace(/[*#_`]/g, ""); // strip markdown symbols before reading aloud
-  const utterance = new SpeechSynthesisUtterance(plainText);
-  utterance.rate = 1;
-  speechSynthesis.speak(utterance);
-}
+    sendBtn.addEventListener("click", () => sendMessage(textInput.value));
+    textInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage(textInput.value);
+    });
 
-stopBtn.addEventListener("click", () => speechSynthesis.cancel());
-
-// ---- Speech-to-text ----
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition;
-let listening = false;
-
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.lang = "en-IN";
-  recognition.interimResults = false;
-
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    sendMessage(transcript);
-  };
-
-  recognition.onend = () => {
-    listening = false;
-    micBtn.classList.remove("listening");
-  };
-} else {
-  micBtn.disabled = true;
-  micBtn.title = "Speech recognition not supported in this browser (use Chrome)";
-}
-
-micBtn.addEventListener("click", () => {
-  if (!recognition) return;
-  if (listening) {
-    recognition.stop();
-  } else {
-    recognition.start();
-    listening = true;
-    micBtn.classList.add("listening");
-  }
-});
-
-sendBtn.addEventListener("click", () => sendMessage(textInput.value));
-textInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage(textInput.value);
-});
-
-addMessage("Hi! Tell me your hall ticket number to get started, e.g. \"My hall ticket is 23XU1A0578\".", "bot");
-</script>
+    addMessage("Hi! Tell me your hall ticket number to get started, e.g. \"My hall ticket is 23XU1A0578\".", "bot");
+  </script>
 
 </body>
+
 </html>
