@@ -513,7 +513,11 @@
       '--watermark',
       "url('https://cache.careers360.mobi/media/colleges/social-media/media-gallery/24187/2020/7/27/Campus%20view%20of%20CSI%20Wesley%20Institute%20of%20Technology%20and%20Sciences%20Secunderabad_Campus-view.jpg')"
     );
-    const API_URL = "https://result-ai.onrender.com/api/chat";
+
+    // Point this at your local backend for now; swap back to the Render URL when you deploy
+    const BASE_URL = "http://localhost:5000";
+    const CHAT_URL = `${BASE_URL}/api/chat`;
+    const SPEECH_URL = `${BASE_URL}/api/speech`;
 
     let sessionId = localStorage.getItem("sessionId");
     if (!sessionId) {
@@ -589,7 +593,7 @@
       showTyping();
 
       try {
-        const res = await fetch(API_URL, {
+        const res = await fetch(CHAT_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId, message }),
@@ -615,39 +619,109 @@
 
     stopBtn.addEventListener("click", () => speechSynthesis.cancel());
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
+    // ---------- Mic recording -> backend Deepgram transcription ----------
+    let mediaRecorder;
+    let audioChunks = [];
     let listening = false;
 
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-IN";
-      recognition.interimResults = false;
+    async function transcribeAudio(blob) {
+      showTyping();
+      hideTyping(); // clear typing dots, we'll show a "transcribing" state instead
+      const transcribingMsg = addMessage("🎙️ Transcribing...", "bot");
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        sendMessage(transcript);
-      };
+      try {
+        const formData = new FormData();
+        formData.append("audio", blob, "recording.webm");
 
-      recognition.onend = () => {
-        listening = false;
-        micBtn.classList.remove("listening");
-      };
-    } else {
-      micBtn.disabled = true;
-      micBtn.title = "Speech recognition not supported in this browser (use Chrome)";
+        const res = await fetch(SPEECH_URL, {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        transcribingMsg.remove();
+
+        if (!res.ok || !data.transcript) {
+          addMessage(data.error || "Couldn't understand that. Try again?", "bot");
+          return;
+        }
+
+        sendMessage(data.transcript);
+      } catch (err) {
+        transcribingMsg.remove();
+        addMessage("Error transcribing audio: " + err.message, "bot");
+      }
     }
 
-    micBtn.addEventListener("click", () => {
-      if (!recognition) return;
-      if (listening) {
-        recognition.stop();
-      } else {
-        recognition.start();
-        listening = true;
+    async function startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const track = stream.getAudioTracks()[0];
+        console.log(track.getSettings());
+        audioChunks = [];
+        let options = {};
+
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          options.mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          options.mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          options.mimeType = "audio/mp4";
+        }
+
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        console.log("Recording MIME:", mediaRecorder.mimeType);
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            console.log("Chunk:", e.data.size);
+            audioChunks.push(e.data);
+          }
+        };
+        mediaRecorder.onstop = () => {
+  const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+
+  console.log("Chunks:", audioChunks.length);
+  console.log("Blob size:", blob.size);
+
+  // Download the recording so we can test it
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "test.webm";
+  a.click();
+
+  stream.getTracks().forEach((track) => track.stop());
+
+  transcribeAudio(blob);
+};
+
+        mediaRecorder.start(1000); listening = true;
         micBtn.classList.add("listening");
+      } catch (err) {
+        addMessage("Microphone access denied or unavailable: " + err.message, "bot");
       }
-    });
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && listening) {
+        mediaRecorder.stop();
+        listening = false;
+        micBtn.classList.remove("listening");
+      }
+    }
+
+    if (navigator.mediaDevices && window.MediaRecorder) {
+      micBtn.addEventListener("click", () => {
+        if (listening) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      });
+    } else {
+      micBtn.disabled = true;
+      micBtn.title = "Microphone recording not supported in this browser";
+    }
 
     sendBtn.addEventListener("click", () => sendMessage(textInput.value));
     textInput.addEventListener("keydown", (e) => {
