@@ -657,7 +657,7 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const track = stream.getAudioTracks()[0];
-        console.log(track.getSettings());
+        // console.log(track.getSettings());
         audioChunks = [];
         let options = {};
 
@@ -671,17 +671,17 @@
 
         mediaRecorder = new MediaRecorder(stream, options);
 
-        console.log("Recording MIME:", mediaRecorder.mimeType);
+        // console.log("Recording MIME:", mediaRecorder.mimeType);
         mediaRecorder.ondataavailable = (e) => {
           if (e.data && e.data.size > 0) {
-            console.log("Chunk:", e.data.size);
+            // console.log("Chunk:", e.data.size);
             audioChunks.push(e.data);
           }
         };
          mediaRecorder.onstop = () => {
           const blob = new Blob(audioChunks, { type: "audio/webm" });
-          console.log("Chunks:", audioChunks.length);
-          console.log("Blob size:", blob.size);
+          // console.log("Chunks:", audioChunks.length);
+          // console.log("Blob size:", blob.size);
           stream.getTracks().forEach((track) => track.stop());
           transcribeAudio(blob);
         };
