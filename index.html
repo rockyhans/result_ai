@@ -678,22 +678,13 @@
             audioChunks.push(e.data);
           }
         };
-        mediaRecorder.onstop = () => {
-  const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-
-  console.log("Chunks:", audioChunks.length);
-  console.log("Blob size:", blob.size);
-
-  // Download the recording so we can test it
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "test.webm";
-  a.click();
-
-  stream.getTracks().forEach((track) => track.stop());
-
-  transcribeAudio(blob);
-};
+         mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          console.log("Chunks:", audioChunks.length);
+          console.log("Blob size:", blob.size);
+          stream.getTracks().forEach((track) => track.stop());
+          transcribeAudio(blob);
+        };
 
         mediaRecorder.start(1000); listening = true;
         micBtn.classList.add("listening");
