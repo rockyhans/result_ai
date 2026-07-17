@@ -270,5 +270,82 @@ app.post("/api/speech", upload.single("audio"), async (req, res) => {
   }
 });
 
+
+// ---------- Chat endpoint (session-aware, Gemini) ----------
+app.post("/api/chat", async (req, res) => {
+  const { sessionId, message } = req.body;
+
+  if (!sessionId || !message) {
+    return res.status(400).json({ error: "sessionId and message are required" });
+  }
+
+  // Get or create session
+  if (!sessions.has(sessionId)) {
+    sessions.set(sessionId, { hallticket: null });
+  }
+  const session = sessions.get(sessionId);
+
+  // If the message mentions a hall ticket, capture/update it in the session
+  const foundHallTicket = extractHallTicket(message);
+  if (foundHallTicket) {
+    session.hallticket = foundHallTicket;
+  }
+
+  // If we still don't have a hall ticket for this session, ask for it
+  if (!session.hallticket) {
+    return res.json({
+      reply: "Sure — could you tell me your hall ticket number first? For example, 23XU1A0578.",
+      needsHallTicket: true,
+    });
+  }
+
+  try {
+    const data = await getResult(session.hallticket);
+    const cgpa = calculateCgpa(data.semesters);
+
+    const summary = {
+      name: data.profile.name,
+      hallTicket: data.profile.hallTicket,
+      currentBacklogs: data.profile.currentBacklogs,
+      cgpa,
+      semesters: data.semesters.map((s) => ({
+        semester: s.semesterName,
+        sgpa: s.sgpa,
+        backlogs: s.backlogs,
+        subjects: s.subjects.map((sub) => ({
+          subject: sub.subject,
+          grade: sub.grade,
+          totalMarks: sub.totalMarks,
+        })),
+      })),
+    };
+
+    const prompt = `You are a friendly college result assistant. Answer the student's question using ONLY the data provided below. Be concise and clear, and speak naturally since your reply may be read aloud. If the data doesn't contain the answer, say so honestly.
+
+Student Data:
+${JSON.stringify(summary, null, 2)}
+
+Student's question: ${message}`;
+
+    const geminiResponse = await axios.post(
+      GEMINI_URL,
+      { contents: [{ parts: [{ text: prompt }] }] },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    const reply =
+      geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Sorry, I couldn't generate a response.";
+
+    res.json({ reply, cgpa, hallticket: session.hallticket });
+  } catch (err) {
+    console.error("FULL ERROR:", err.response?.data || err.message);
+    res.status(500).json({
+      error: "Chat failed",
+      details: err.response?.data || err.message,
+    });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
