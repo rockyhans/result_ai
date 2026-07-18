@@ -170,7 +170,6 @@
       transform: scale(0.95);
     }
 
-    /* ---------- Messages ---------- */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -185,14 +184,32 @@
       position: relative;
     }
 
-    .chat-messages::before {
+    /* .chat-messages::before {
       content: "";
-      position: absolute;
+      position: fixed;
       inset: 0;
       background-image: var(--watermark);
       background-repeat: no-repeat;
       background-position: center 46%;
       background-size: 480px;
+      opacity: 0.2;
+      pointer-events: none;
+    } */
+
+    .chat-messages::before {
+      content: "";
+      position: fixed;
+      width: 450px;
+      height: 450px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-image: var(--watermark);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+      border-radius: 50%;
+      overflow: hidden;
       opacity: 0.2;
       pointer-events: none;
     }
@@ -323,7 +340,6 @@
       }
     }
 
-    /* ---------- Input row ---------- */
     .chat-input-row {
       display: flex;
       gap: 8px;
@@ -466,6 +482,11 @@
         padding: 6px 10px;
         font-size: 0.68rem;
       }
+
+      .chat-messages::before {
+        height: 300px;
+        width: 300px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -514,8 +535,7 @@
       "url('https://cache.careers360.mobi/media/colleges/social-media/media-gallery/24187/2020/7/27/Campus%20view%20of%20CSI%20Wesley%20Institute%20of%20Technology%20and%20Sciences%20Secunderabad_Campus-view.jpg')"
     );
 
-    // Point this at your local backend for now; swap back to the Render URL when you deploy
-    const BASE_URL = "https://result-ai.onrender.com";
+    const BASE_URL = "http://localhost:5000"; // "https://result-ai.onrender.com"; // "http://localhost:5000";
     const CHAT_URL = `${BASE_URL}/api/chat`;
     const SPEECH_URL = `${BASE_URL}/api/speech`;
 
@@ -619,14 +639,13 @@
 
     stopBtn.addEventListener("click", () => speechSynthesis.cancel());
 
-    // ---------- Mic recording -> backend Deepgram transcription ----------
     let mediaRecorder;
     let audioChunks = [];
     let listening = false;
 
     async function transcribeAudio(blob) {
       showTyping();
-      hideTyping(); // clear typing dots, we'll show a "transcribing" state instead
+      hideTyping();
       const transcribingMsg = addMessage("🎙️ Transcribing...", "bot");
 
       try {
@@ -678,7 +697,7 @@
             audioChunks.push(e.data);
           }
         };
-         mediaRecorder.onstop = () => {
+        mediaRecorder.onstop = () => {
           const blob = new Blob(audioChunks, { type: "audio/webm" });
           // console.log("Chunks:", audioChunks.length);
           // console.log("Blob size:", blob.size);
@@ -719,7 +738,7 @@
       if (e.key === "Enter") sendMessage(textInput.value);
     });
 
-    addMessage("Hi! Tell me your hall ticket number to get started, e.g. \"My hall ticket is 23XU1A0578\".", "bot");
+    addMessage("Hi! Tell me your hall ticket number to get started, e.g. \"My hall ticket is 23XU1A0578\".", "bot"); // Hi! Tell me your hall ticket number to get started, e.g. \"My hall ticket is 23XU1A0578\
   </script>
 
 </body>
